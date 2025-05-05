@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Administrativo</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+    .centered {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      width: 100%;
+      max-width: 400px;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .error {
+      color: red;
+      font-size: 0.9em;
+      display: none;
+    }
+    #painel {
+      display: none;
+      padding: 30px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .success {
+      background-color: #28a745;
+    }
+    .success:hover {
+      background-color: #1e7e34;
+    }
+    .danger {
+      background-color: #dc3545;
+    }
+    .danger:hover {
+      background-color: #b02a37;
+    }
+    .gray {
+      background-color: #6c757d;
+    }
+    .gray:hover {
+      background-color: #5a6268;
+    }
+  </style>
+</head>
+<body>
+
+<div class="centered" id="loginSection">
+  <div class="login-container">
+    <h2>Login Administrativo</h2>
+    <input type="text" id="usuario" placeholder="Usuário">
+    <input type="password" id="senha" placeholder="Senha">
+    <button onclick="verificarLogin()">Entrar</button>
+    <p class="error" id="erroLogin">Usuário ou senha incorretos!</p>
+  </div>
+</div>
+
+<div id="painel">
+  <h2>Painel Administrativo</h2>
+
+  <h3>Usuários</h3>
+  <div id="usuariosContainer"></div>
+
+  <h3>Recargas Pendentes</h3>
+  <div id="recargasContainer"></div>
+
+  <h3>Saques Pendentes</h3>
+  <div id="saquesContainer"></div>
+
+  <h3>Retiradas Realizadas</h3>
+  <div id="retiradasContainer"></div>
+
+  <h3>Investimentos Realizados</h3>
+  <div id="investimentosContainer"></div>
+</div>
+
+<script>
+  function verificarLogin() {
+    const usuario = document.getElementById('usuario').value.trim();
+    const senha = document.getElementById('senha').value.trim();
+    const erro = document.getElementById('erroLogin');
+
+    if (usuario === "admir" && senha === "LUIS00") {
+      document.getElementById('loginSection').style.display = "none";
+      document.getElementById('painel').style.display = "block";
+      iniciarPainel();
+    } else {
+      erro.style.display = "block";
+    }
+  }
+
+  function iniciarPainel() {
+    const firebaseConfig = {
+      apiKey: "AIzaSyCKSKnVC8dNWmiMrNr1j4rMLfQTlOrqzVM",
+      authDomain: "hinvest-f4354.firebaseapp.com",
+      databaseURL: "https://hinvest-f4354-default-rtdb.firebaseio.com",
+      projectId: "hinvest-f4354",
+      storageBucket: "hinvest-f4354.appspot.com",
+      messagingSenderId: "646397677016",
+      appId: "1:646397677016:web:f05ca27a38439568bff6ad"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Usuários
+    db.ref("usuarios").on("value", snapshot => {
+      const container = document.getElementById("usuariosContainer");
+      container.innerHTML = "";
+      snapshot.forEach(child => {
+        const user = child.val();
+        const telefone = child.key;
+        const nome = user.nome || "(Sem nome)";
+        const saldo = user.saldoConta || 0;
+        const bloqueado = user.bloqueado ? "SIM" : "NÃO";
+        const conta = user.contaBancaria;
+        const email = user.email || "E-mail não cadastrado";
+        const dadosPix = conta ? `
+          <b>Banco:</b><br>
+          Titular: ${conta.nomeTitular}<br>
+          Tipo: ${conta.tipoChave}<br>
+          Chave PIX: ${conta.chavePix}<br>` : "Sem dados bancários.";
+        container.innerHTML += `
+          <div class="card">
+            <b>Telefone:</b> ${telefone}<br>
+            <b>Nome:</b> ${nome}<br>
+            <b>E-mail:</b> ${email}<br>
+            <b>Saldo na Conta:</b> R$${saldo.toFixed(2)}<br>
+            <b>Bloqueado:</b> ${bloqueado}<br><br>
+            ${dadosPix}<br>
+            <button class="success" onclick="adicionarSaldo('${telefone}')">Adicionar Saldo</button>
+            <button class="danger" onclick="removerUsuario('${telefone}')">Remover Usuário</button>
+            <button class="gray" onclick="bloquearUsuario('${telefone}')">Bloquear Usuário</button>
+          </div>`;
+      });
+    });
+
+    function adicionarSaldo(telefone) {
+      const valor = prompt("Digite o valor a ser adicionado:");
+      if (valor && !isNaN(valor)) {
+        db.ref("usuarios/" + telefone + "/saldoConta").once("value").then(snapshot => {
+          const saldoAtual = snapshot.val() || 0;
+          const saldoAtualizado = saldoAtual + parseFloat(valor);
+          db.ref("usuarios/" + telefone).update({ saldoConta: saldoAtualizado }).then(() => alert("Saldo adicionado com sucesso!"));
+        });
+      } else {
+        alert("Valor inválido.");
+      }
+    }
+
+    window.adicionarSaldo = adicionarSaldo;
+
+    function removerUsuario(telefone) {
+      if (confirm("Tem certeza que deseja remover este usuário?")) {
+        db.ref("usuarios/" + telefone).remove().then(() => alert("Usuário removido com sucesso!"));
+      }
+    }
+
+    function bloquearUsuario(telefone) {
+      if (confirm("Tem certeza que deseja bloquear este usuário?")) {
+        db.ref("usuarios/" + telefone).update({ bloqueado: true }).then(() => alert("Usuário bloqueado com sucesso!"));
+      }
+    }
+
+    window.removerUsuario = removerUsuario;
+    window.bloquearUsuario = bloquearUsuario;
+
+    db.ref("saques").on("value", snapshot => {
+      const container = document.getElementById("saquesContainer");
+      container.innerHTML = "";
+      snapshot.forEach(child => {
+        const saque = child.val();
+        if (saque.status === "pendente") {
+          container.innerHTML += `
+            <div class="card">
+              <b>Usuário:</b> ${saque.userId}<br>
+              <b>Valor:</b> R$${parseFloat(saque.valorSaque).toFixed(2)}<br>
+              <b>Chave PIX:</b> ${saque.chavePix}<br>
+              <b>Status:</b> ${saque.status}<br>
+              <b>Recebimento:</b> ${saque.recebimento || "-"}<br>
+              <button class="success" onclick="aprovarSaque('${child.key}')">Aprovar Saque</button>
+              <button class="danger" onclick="rejeitarSaque('${child.key}')">Rejeitar Saque</button>
+            </div>`;
+        }
+      });
+    });
+
+    window.aprovarSaque = function(id) {
+      if (confirm("Confirmar aprovação do saque?")) {
+        db.ref("saques/" + id).update({ status: "aprovado" }).then(() => alert("Saque aprovado!"));
+      }
+    }
+
+    window.rejeitarSaque = function(id) {
+      if (confirm("Confirmar rejeição do saque?")) {
+        db.ref("saques/" + id).update({ status: "rejeitado" }).then(() => alert("Saque rejeitado!"));
+      }
+    }
+
+    db.ref("usuarios").on("child_added", snapshot => {
+      const telefone = snapshot.key;
+      db.ref("usuarios/" + telefone + "/extratoRetirada").on("child_added", childSnapshot => {
+        const retirada = childSnapshot.val();
+        const container = document.getElementById("retiradasContainer");
+        container.innerHTML += `
+          <div class="card">
+            <b>Usuário:</b> ${telefone}<br>
+            <b>Valor:</b> R$${parseFloat(retirada.valor).toFixed(2)}<br>
+            <b>Data:</b> ${retirada.data || "-"}<br>
+          </div>`;
+      });
+    });
+
+    db.ref("investimentos").on("child_added", childSnapshot => {
+      const investimento = childSnapshot.val();
+      const container = document.getElementById("investimentosContainer");
+      container.innerHTML += `
+        <div class="card">
+          <b>Usuário:</b> ${investimento.telefone}<br>
+          <b>Valor:</b> R$${parseFloat(investimento.valor).toFixed(2)}<br>
+          <b>Tempo:</b> ${investimento.tempo || "-"}<br>
+        </div>`;
+    });
+  }
+</script>
+
+</body>
+</html>
