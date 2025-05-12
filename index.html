@@ -146,7 +146,7 @@
         const user = child.val();
         const telefone = child.key;
         const nome = user.nome || "(Sem nome)";
-        const saldo = user.saldoConta || 0;
+        const saldo = user.saldoCarteira || 0;  // Alterado para saldoCarteira
         const bloqueado = user.bloqueado ? "SIM" : "NÃO";
         const conta = user.contaBancaria;
         const email = user.email || "E-mail não cadastrado";
@@ -160,7 +160,7 @@
             <b>Telefone:</b> ${telefone}<br>
             <b>Nome:</b> ${nome}<br>
             <b>E-mail:</b> ${email}<br>
-            <b>Saldo na Conta:</b> R$${saldo.toFixed(2)}<br>
+            <b>Saldo na Carteira:</b> R$${saldo.toFixed(2)}<br>  <!-- Alterado para saldoCarteira -->
             <b>Bloqueado:</b> ${bloqueado}<br><br>
             ${dadosPix}<br>
             <button class="success" onclick="adicionarSaldo('${telefone}')">Adicionar Saldo</button>
@@ -173,10 +173,10 @@
     function adicionarSaldo(telefone) {
       const valor = prompt("Digite o valor a ser adicionado:");
       if (valor && !isNaN(valor)) {
-        db.ref("usuarios/" + telefone + "/saldoConta").once("value").then(snapshot => {
+        db.ref("usuarios/" + telefone + "/saldoCarteira").once("value").then(snapshot => {  // Alterado para saldoCarteira
           const saldoAtual = snapshot.val() || 0;
           const saldoAtualizado = saldoAtual + parseFloat(valor);
-          db.ref("usuarios/" + telefone).update({ saldoConta: saldoAtualizado }).then(() => alert("Saldo adicionado com sucesso!"));
+          db.ref("usuarios/" + telefone).update({ saldoCarteira: saldoAtualizado }).then(() => alert("Saldo adicionado com sucesso!"));  // Alterado para saldoCarteira
         });
       } else {
         alert("Valor inválido.");
@@ -222,40 +222,15 @@
 
     window.aprovarSaque = function(id) {
       if (confirm("Confirmar aprovação do saque?")) {
-        db.ref("saques/" + id).update({ status: "aprovado" }).then(() => alert("Saque aprovado!"));
+        db.ref("saques/" + id).update({ status: "aprovado" }).then(() => alert("Saque aprovado com sucesso!"));
       }
-    }
+    };
 
     window.rejeitarSaque = function(id) {
       if (confirm("Confirmar rejeição do saque?")) {
-        db.ref("saques/" + id).update({ status: "rejeitado" }).then(() => alert("Saque rejeitado!"));
+        db.ref("saques/" + id).remove().then(() => alert("Saque rejeitado com sucesso!"));
       }
-    }
-
-    db.ref("usuarios").on("child_added", snapshot => {
-      const telefone = snapshot.key;
-      db.ref("usuarios/" + telefone + "/extratoRetirada").on("child_added", childSnapshot => {
-        const retirada = childSnapshot.val();
-        const container = document.getElementById("retiradasContainer");
-        container.innerHTML += `
-          <div class="card">
-            <b>Usuário:</b> ${telefone}<br>
-            <b>Valor:</b> R$${parseFloat(retirada.valor).toFixed(2)}<br>
-            <b>Data:</b> ${retirada.data || "-"}<br>
-          </div>`;
-      });
-    });
-
-    db.ref("investimentos").on("child_added", childSnapshot => {
-      const investimento = childSnapshot.val();
-      const container = document.getElementById("investimentosContainer");
-      container.innerHTML += `
-        <div class="card">
-          <b>Usuário:</b> ${investimento.telefone}<br>
-          <b>Valor:</b> R$${parseFloat(investimento.valor).toFixed(2)}<br>
-          <b>Tempo:</b> ${investimento.tempo || "-"}<br>
-        </div>`;
-    });
+    };
   }
 </script>
 
