@@ -164,7 +164,7 @@
             <b>Bloqueado:</b> ${bloqueado}<br><br>
             ${dadosPix}<br>
             <button class="success" onclick="adicionarSaldo('${telefone}')">Adicionar Saldo</button>
-            <button class="danger" onclick="removerUsuario('${telefone}')">Remover Usuário</button>
+            <button class="danger" onclick="excluirUsuario('${telefone}')">Excluir Usuário</button> <!-- Alterado para Excluir Usuário -->
             <button class="gray" onclick="bloquearUsuario('${telefone}')">Bloquear Usuário</button>
           </div>`;
       });
@@ -185,9 +185,9 @@
 
     window.adicionarSaldo = adicionarSaldo;
 
-    function removerUsuario(telefone) {
-      if (confirm("Tem certeza que deseja remover este usuário?")) {
-        db.ref("usuarios/" + telefone).remove().then(() => alert("Usuário removido com sucesso!"));
+    function excluirUsuario(telefone) { // Alterado para excluirUsuario
+      if (confirm("Tem certeza que deseja excluir este usuário?")) {
+        db.ref("usuarios/" + telefone).remove().then(() => alert("Usuário excluído com sucesso!"));
       }
     }
 
@@ -197,7 +197,7 @@
       }
     }
 
-    window.removerUsuario = removerUsuario;
+    window.excluirUsuario = excluirUsuario; // Alterado para excluirUsuario
     window.bloquearUsuario = bloquearUsuario;
 
     db.ref("saques").on("value", snapshot => {
