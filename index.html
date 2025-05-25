@@ -94,6 +94,35 @@
     .gray:hover {
       background-color: #5a6268;
     }
+
+    .extrato-card {
+      background-color: #e9ecef;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+    }
+
+    .extrato-card p {
+      margin: 5px 0;
+    }
+
+    .aguardando {
+      background-color: orange;
+      color: white;
+      padding: 5px;
+    }
+
+    .aprovado {
+      background-color: green;
+      color: white;
+      padding: 5px;
+    }
+
+    .input-saldo {
+      display: none;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -116,6 +145,9 @@
 
   <h3>Investimentos Realizados</h3>
   <div id="investimentosContainer"></div>
+
+  <h3>Extrato de Retiradas</h3>
+  <div id="extratoContainer"></div> <!-- Novo container para o extrato de retiradas -->
 </div>
 
 <script>
@@ -165,7 +197,7 @@
           Tipo: ${conta.tipoChave}<br>
           Chave PIX: ${conta.chavePix}<br>` : "Sem dados bancários.";
         container.innerHTML += `
-          <div class="card">
+          <div class="card" id="user-${telefone}">
             <b>Telefone:</b> ${telefone}<br>
             <b>Nome:</b> ${nome}<br>
             <b>E-mail:</b> ${email}<br>
@@ -173,6 +205,10 @@
             <b>Bloqueado:</b> ${bloqueado}<br><br>
             ${dadosPix}<br>
             <button class="success" onclick="adicionarSaldo('${telefone}')">Adicionar Saldo</button>
+            <div class="input-saldo" id="input-saldo-${telefone}">
+              <input type="number" id="valor-saldo-${telefone}" placeholder="Valor a adicionar" />
+              <button class="success" onclick="confirmarAdicionarSaldo('${telefone}')">Confirmar</button>
+            </div>
             <button class="danger" onclick="excluirUsuario('${telefone}')">Excluir Usuário</button>
             <button class="gray" onclick="bloquearUsuario('${telefone}')">Bloquear Usuário</button>
           </div>`;
@@ -205,40 +241,77 @@
         }
       });
     });
+
+    // Exibição de Extrato de Retiradas
+    db.ref("usuarios").on("value", snapshot => {
+      const container = document.getElementById("extratoContainer");
+      container.innerHTML = "";
+      snapshot.forEach(child => {
+        const user = child.val();
+        const telefone = child.key;
+        const extrato = user.extrato || [];
+        extrato.forEach(saque => {
+          const valor = saque.valor || 0;
+          const status = saque.status || "Aguardando";
+          const dataSaque = new Date(saque.data).toLocaleDateString();
+          const statusClass = status === "Aprovado" ? "aprovado" : "aguardando";
+          container.innerHTML += `
+            <div class="extrato-card">
+              <b>Telefone:</b> ${telefone}<br>
+              <b>Valor Sacado:</b> R$${valor.toFixed(2)}<br>
+              <b>Status:</b> <span class="${statusClass}">${status}</span><br>
+              <b>Data do Saque:</b> ${dataSaque}<br>
+            </div>`;
+        });
+      });
+    });
   }
 
   function adicionarSaldo(telefone) {
-    const valor = prompt("Digite o valor a ser adicionado:");
-    if (valor && !isNaN(valor)) {
+    const inputSaldo = document.getElementById(`input-saldo-${telefone}`);
+    inputSaldo.style.display = 'block';
+  }
+
+  function confirmarAdicionarSaldo(telefone) {
+    const valor = parseFloat(document.getElementById(`valor-saldo-${telefone}`).value);
+    if (valor && valor > 0) {
       const db = firebase.database();
-      const userRef = db.ref("usuarios/" + telefone);
-      userRef.once("value").then(snapshot => {
-        const currentSaldoCarteira = snapshot.val().saldoCarteira || 0;
-        userRef.update({ saldoCarteira: currentSaldoCarteira + parseFloat(valor) })
-          .then(() => {
-            alert(`Saldo adicionado com sucesso! Novo saldo na carteira: R$${(currentSaldoCarteira + parseFloat(valor)).toFixed(2)}`);
-            // Atualizando a exibição do saldo na tela
-            document.getElementById('saldo-carteira').textContent = `R$ ${(currentSaldoCarteira + parseFloat(valor)).toFixed(2)}`;
-          });
+      const usuarioRef = db.ref("usuarios/" + telefone);
+      usuarioRef.once("value", snapshot => {
+        const usuario = snapshot.val();
+        if (usuario) {
+          const novoSaldo = usuario.saldoCarteira + valor;
+          usuarioRef.update({ saldoCarteira: novoSaldo });
+          alert("Saldo adicionado com sucesso!");
+        }
       });
-    } else {
-      alert("Valor inválido!");
     }
   }
 
   function excluirUsuario(telefone) {
     const db = firebase.database();
-    db.ref("usuarios/" + telefone).remove()
-      .then(() => alert("Usuário excluído com sucesso!"));
+    const usuarioRef = db.ref("usuarios/" + telefone);
+    usuarioRef.remove()
+      .then(() => {
+        alert("Usuário excluído com sucesso!");
+      })
+      .catch((error) => {
+        alert("Erro ao excluir usuário: " + error.message);
+      });
   }
 
   function bloquearUsuario(telefone) {
     const db = firebase.database();
-    const userRef = db.ref("usuarios/" + telefone);
-    userRef.update({ bloqueado: true })
-      .then(() => alert("Usuário bloqueado com sucesso!"));
+    const usuarioRef = db.ref("usuarios/" + telefone);
+    usuarioRef.once("value", snapshot => {
+      const usuario = snapshot.val();
+      const novoStatus = !usuario.bloqueado;
+      usuarioRef.update({ bloqueado: novoStatus })
+        .then(() => {
+          alert(novoStatus ? "Usuário bloqueado!" : "Usuário desbloqueado!");
+        });
+    });
   }
 </script>
-
 </body>
 </html>
