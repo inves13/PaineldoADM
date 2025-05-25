@@ -114,15 +114,6 @@
   <h3>Usuários</h3>
   <div id="usuariosContainer"></div>
 
-  <h3>Recargas Pendentes</h3>
-  <div id="recargasContainer"></div>
-
-  <h3>Saques Pendentes</h3>
-  <div id="saquesContainer"></div>
-
-  <h3>Retiradas Realizadas</h3>
-  <div id="retiradasContainer"></div>
-
   <h3>Investimentos Realizados</h3>
   <div id="investimentosContainer"></div>
 </div>
@@ -214,28 +205,38 @@
         }
       });
     });
+  }
 
-    // Exibição de Retiradas Realizadas
-    db.ref("retiradas").on("value", snapshot => {
-      const container = document.getElementById("retiradasContainer");
-      container.innerHTML = "";
-      if (snapshot.exists()) {
-        snapshot.forEach(child => {
-          const retirada = child.val();
-          const dataRetirada = new Date(retirada.data).toLocaleDateString();
-          container.innerHTML += `
-            <div class="card">
-              <b>Usuário:</b> ${retirada.userId}<br>
-              <b>Valor Retirado:</b> R$${parseFloat(retirada.valorRetirado).toFixed(2)}<br>
-              <b>Status:</b> ${retirada.status}<br>
-              <b>Recebimento:</b> R$${parseFloat(retirada.recebimento).toFixed(2)}<br>
-              <b>Data:</b> ${dataRetirada}<br>
-            </div>`;
-        });
-      } else {
-        container.innerHTML = "<p>Sem retiradas registradas.</p>";
-      }
-    });
+  function adicionarSaldo(telefone) {
+    const valor = prompt("Digite o valor a ser adicionado:");
+    if (valor && !isNaN(valor)) {
+      const db = firebase.database();
+      const userRef = db.ref("usuarios/" + telefone);
+      userRef.once("value").then(snapshot => {
+        const currentSaldoCarteira = snapshot.val().saldoCarteira || 0;
+        userRef.update({ saldoCarteira: currentSaldoCarteira + parseFloat(valor) })
+          .then(() => {
+            alert(`Saldo adicionado com sucesso! Novo saldo na carteira: R$${(currentSaldoCarteira + parseFloat(valor)).toFixed(2)}`);
+            // Atualizando a exibição do saldo na tela
+            document.getElementById('saldo-carteira').textContent = `R$ ${(currentSaldoCarteira + parseFloat(valor)).toFixed(2)}`;
+          });
+      });
+    } else {
+      alert("Valor inválido!");
+    }
+  }
+
+  function excluirUsuario(telefone) {
+    const db = firebase.database();
+    db.ref("usuarios/" + telefone).remove()
+      .then(() => alert("Usuário excluído com sucesso!"));
+  }
+
+  function bloquearUsuario(telefone) {
+    const db = firebase.database();
+    const userRef = db.ref("usuarios/" + telefone);
+    userRef.update({ bloqueado: true })
+      .then(() => alert("Usuário bloqueado com sucesso!"));
   }
 </script>
 
