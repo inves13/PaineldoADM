@@ -238,33 +238,6 @@
       });
     });
 
-    // Exibição de Investimentos Realizados
-    db.ref("usuarios").on("value", snapshot => {
-      const container = document.getElementById("investimentosContainer");
-      container.innerHTML = "";
-      snapshot.forEach(child => {
-        const user = child.val();
-        const investimentos = user.investimentos;
-        if (investimentos) {
-          investimentos.forEach(investimento => {
-            const plano = investimento.nome || "(Sem nome)";
-            const valor = investimento.valor || 0;
-            const retornoDiario = investimento.retornoDiario || 0;
-            const status = investimento.status || "Aguardando Aprovação";
-            const dataInvestimento = investimento.data ? new Date(investimento.data).toLocaleDateString() : "";
-            container.innerHTML += `
-              <div class="card">
-                <b>Plano:</b> ${plano}<br>
-                <b>Valor:</b> R$${valor.toFixed(2)}<br>
-                <b>Retorno Diário:</b> ${retornoDiario}%<br>
-                <b>Status:</b> ${status}<br>
-                <b>Data de Compra:</b> ${dataInvestimento}<br>
-              </div>`;
-          });
-        }
-      });
-    });
-
     // Exibição de Extrato de Retiradas (Saque)
     db.ref("usuarios").on("value", snapshot => {
       const container = document.getElementById("extratoContainer");
@@ -284,137 +257,79 @@
               <p><b>Valor do Saque:</b> R$${valor.toFixed(2)}</p>
               <p><b>Data:</b> ${dataSaque}</p>
               <p>Status: <span class="${statusClass}">${status}</span></p>
+              <button class="success" onclick="aprovarSaque('${telefone}', ${valor})">Aprovar Saque</button>
             </div>`;
         });
       });
     });
 
-    // Exibição de Extrato de Depósitos (Recargas)
-    db.ref("depositos").on("value", snapshot => {
-      const container = document.getElementById("depositosContainer");
-      container.innerHTML = "";
-      snapshot.forEach(child => {
-        const deposito = child.val();
-        const telefone = deposito.telefone || "Desconhecido";
-        const valor = deposito.valor || 0;
-        const status = deposito.status || "Aguardando";
-        const dataDeposito = deposito.data ? new Date(deposito.data).toLocaleDateString() : "";
-        const statusClass = status.toLowerCase() === "aprovado" ? "aprovado" : "aguardando";
-        container.innerHTML += `
-          <div class="extrato-card">
-            <p><b>Usuário:</b> ${telefone}</p>
-            <p><b>Valor do Depósito:</b> R$${valor.toFixed(2)}</p>
-            <p><b>Data:</b> ${dataDeposito}</p>
-            <p>Status: <span class="${statusClass}">${status}</span></p>
-          </div>`;
-      });
-    });
-
-    // Extrato Completo: Junta e exibe depósitos e retiradas juntos, ordenados por data decrescente
-    Promise.all([
-      db.ref("depositos").once("value"),
-      db.ref("usuarios").once("value")
-    ]).then(([snapshotDepositos, snapshotUsuarios]) => {
-      const container = document.getElementById("extratoCompletoContainer");
-      container.innerHTML = "";
-
-      // Array para juntar registros
-      let registros = [];
-
-      // Depositos
-      snapshotDepositos.forEach(child => {
-        const deposito = child.val();
-        registros.push({
-          tipo: "Depósito",
-          telefone: deposito.telefone || "Desconhecido",
-          valor: deposito.valor || 0,
-          status: deposito.status || "Aguardando",
-          data: deposito.data ? new Date(deposito.data) : new Date(0)
-        });
-      });
-
-      // Retiradas (extrato)
-      snapshotUsuarios.forEach(userSnap => {
-        const telefone = userSnap.key;
-        const extrato = userSnap.val().extrato || [];
-        extrato.forEach(saque => {
-          registros.push({
-            tipo: "Retirada",
-            telefone: telefone,
-            valor: saque.valor || 0,
-            status: saque.status || "Aguardando",
-            data: saque.data ? new Date(saque.data) : new Date(0)
-          });
-        });
-      });
-
-      // Ordenar pela data (descendente)
-      registros.sort((a, b) => b.data - a.data);
-
-      // Exibir registros
-      registros.forEach(reg => {
-        const statusClass = reg.status.toLowerCase() === "aprovado" ? "aprovado" : "aguardando";
-        container.innerHTML += `
-          <div class="extrato-card">
-            <p><b>Tipo:</b> ${reg.tipo}</p>
-            <p><b>Usuário:</b> ${reg.telefone}</p>
-            <p><b>Valor:</b> R$${reg.valor.toFixed(2)}</p>
-            <p><b>Data:</b> ${reg.data.toLocaleDateString()}</p>
-            <p>Status: <span class="${statusClass}">${reg.status}</span></p>
-          </div>`;
-      });
-    }).catch(err => {
-      console.error("Erro ao carregar extrato completo: ", err);
-    });
-  }
-
-  // Função para mostrar input para adicionar saldo
-  function adicionarSaldo(telefone) {
-    const inputDiv = document.getElementById(`input-saldo-${telefone}`);
-    inputDiv.style.display = inputDiv.style.display === "block" ? "none" : "block";
-  }
-
-  // Confirmar adicionar saldo
-  function confirmarAdicionarSaldo(telefone) {
-    const valorInput = document.getElementById(`valor-saldo-${telefone}`);
-    const valor = parseFloat(valorInput.value);
-    if (isNaN(valor) || valor <= 0) {
-      alert("Insira um valor válido para adicionar saldo.");
-      return;
-    }
-    const userRef = firebase.database().ref(`usuarios/${telefone}`);
-
-    userRef.once("value").then(snapshot => {
-      let saldoAtual = snapshot.val().saldoCarteira || 0;
-      saldoAtual += valor;
-      return userRef.update({ saldoCarteira: saldoAtual });
-    }).then(() => {
-      alert(`Saldo de R$${valor.toFixed(2)} adicionado ao usuário ${telefone}.`);
-      document.getElementById(`input-saldo-${telefone}`).style.display = "none";
-      document.getElementById(`valor-saldo-${telefone}`).value = "";
-    }).catch(err => {
-      alert("Erro ao adicionar saldo: " + err);
-    });
-  }
-
-  // Excluir usuário
-  function excluirUsuario(telefone) {
-    if (confirm(`Deseja realmente excluir o usuário ${telefone}? Essa ação é irreversível.`)) {
-      firebase.database().ref(`usuarios/${telefone}`).remove()
-        .then(() => alert("Usuário excluído com sucesso."))
-        .catch(err => alert("Erro ao excluir usuário: " + err));
-    }
-  }
-
-  // Bloquear usuário
-  function bloquearUsuario(telefone) {
-    if (confirm(`Deseja bloquear/desbloquear o usuário ${telefone}?`)) {
-      const userRef = firebase.database().ref(`usuarios/${telefone}`);
+    // Aprovar Saque
+    window.aprovarSaque = function(telefone, valor) {
+      const userRef = firebase.database().ref(`usuarios/${telefone}/extrato`);
       userRef.once("value").then(snapshot => {
-        const atual = snapshot.val().bloqueado || false;
-        return userRef.update({ bloqueado: !atual });
-      }).then(() => alert("Status de bloqueio alterado com sucesso."))
-        .catch(err => alert("Erro ao alterar status de bloqueio: " + err));
+        const extrato = snapshot.val() || [];
+        const saqueIndex = extrato.findIndex(s => s.valor === valor);
+        if (saqueIndex > -1) {
+          extrato[saqueIndex].status = "Aprovado";
+          return userRef.set(extrato);
+        } else {
+          alert("Saque não encontrado.");
+        }
+      }).then(() => {
+        alert(`Saque de R$${valor.toFixed(2)} aprovado!`);
+      }).catch(err => {
+        alert("Erro ao aprovar saque: " + err);
+      });
+    };
+
+    // Função para mostrar input para adicionar saldo
+    function adicionarSaldo(telefone) {
+      const inputDiv = document.getElementById(`input-saldo-${telefone}`);
+      inputDiv.style.display = inputDiv.style.display === "block" ? "none" : "block";
+    }
+
+    // Confirmar adicionar saldo
+    function confirmarAdicionarSaldo(telefone) {
+      const valorInput = document.getElementById(`valor-saldo-${telefone}`);
+      const valor = parseFloat(valorInput.value);
+      if (isNaN(valor) || valor <= 0) {
+        alert("Insira um valor válido para adicionar saldo.");
+        return;
+      }
+      const userRef = firebase.database().ref(`usuarios/${telefone}`);
+
+      userRef.once("value").then(snapshot => {
+        let saldoAtual = snapshot.val().saldoCarteira || 0;
+        saldoAtual += valor;
+        return userRef.update({ saldoCarteira: saldoAtual });
+      }).then(() => {
+        alert(`Saldo de R$${valor.toFixed(2)} adicionado ao usuário ${telefone}.`);
+        document.getElementById(`input-saldo-${telefone}`).style.display = "none";
+        document.getElementById(`valor-saldo-${telefone}`).value = "";
+      }).catch(err => {
+        alert("Erro ao adicionar saldo: " + err);
+      });
+    }
+
+    // Excluir usuário
+    function excluirUsuario(telefone) {
+      if (confirm(`Deseja realmente excluir o usuário ${telefone}? Essa ação é irreversível.`)) {
+        firebase.database().ref(`usuarios/${telefone}`).remove()
+          .then(() => alert("Usuário excluído com sucesso."))
+          .catch(err => alert("Erro ao excluir usuário: " + err));
+      }
+    }
+
+    // Bloquear usuário
+    function bloquearUsuario(telefone) {
+      if (confirm(`Deseja bloquear/desbloquear o usuário ${telefone}?`)) {
+        const userRef = firebase.database().ref(`usuarios/${telefone}`);
+        userRef.once("value").then(snapshot => {
+          const atual = snapshot.val().bloqueado || false;
+          return userRef.update({ bloqueado: !atual });
+        }).then(() => alert("Status de bloqueio alterado com sucesso."))
+          .catch(err => alert("Erro ao alterar status de bloqueio: " + err));
+      }
     }
   }
 </script>
