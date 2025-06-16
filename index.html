@@ -1,208 +1,145 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
   <title>Painel Administrativo</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
-    body, html {
-      height: 100%;
-      margin: 0;
-      padding: 0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #111;
+      color: #eee;
       font-family: Arial, sans-serif;
-      background: #f2f2f2;
     }
-
-    .centered {
+    h2, h3 {
+      color: #0f0;
+      margin-bottom: 10px;
+    }
+    #loginSection, #painel {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      height: 100%;
-    }
-
-    .login-container {
-      background: #fff;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-      width: 100%;
-      max-width: 400px;
-    }
-
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #0056b3;
-    }
-
-    .error {
-      color: red;
-      font-size: 0.9em;
-      display: none;
-    }
-
-    #painel {
-      display: none;
-      padding: 30px;
-      height: 100%;
-      overflow-y: auto;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       padding: 20px;
-      margin-bottom: 20px;
+      min-height: 100vh;
     }
-
-    .success {
-      background-color: #28a745;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 5px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .success:hover {
-      background-color: #1e7e34;
-    }
-
-    .danger {
-      background-color: #dc3545;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 5px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .danger:hover {
-      background-color: #b02a37;
-    }
-
-    .gray {
-      background-color: #6c757d;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 5px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .gray:hover {
-      background-color: #5a6268;
-    }
-
-    .extrato-card {
-      background-color: #e9ecef;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 15px;
-      border: 1px solid #ddd;
-    }
-
-    .extrato-card p {
+    input, button {
+      padding: 8px;
       margin: 5px 0;
-    }
-
-    .aguardando {
-      background-color: orange;
-      color: white;
-      padding: 5px;
+      border: none;
       border-radius: 4px;
+      width: 100%;
+      max-width: 300px;
     }
-
-    .aprovado {
-      background-color: green;
-      color: white;
-      padding: 5px;
-      border-radius: 4px;
+    button {
+      cursor: pointer;
     }
-
+    .success { background: #2ecc71; color: #fff; }
+    .danger { background: #e74c3c; color: #fff; }
+    .gray { background: #7f8c8d; color: #fff; }
+    #painel { display: none; align-items: flex-start; overflow-y: auto; }
+    .section {
+      width: 100%;
+      max-width: 900px;
+      margin: 20px 0;
+    }
+    .card {
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #333;
+    }
+    .extrato-card {
+      background: #1b1b1b;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border: 1px solid #333;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #0f0;
+    }
+    .status {
+      font-weight: bold;
+    }
+    .aprovado { color: #2ecc71; }
+    .aguardando { color: #f1c40f; }
     .input-saldo {
-      display: none;
+      display: flex;
+      gap: 5px;
+      margin-top: 8px;
+    }
+    .input-saldo input {
+      flex: 1;
+      padding: 5px;
+    }
+    #erroLogin {
+      color: red;
       margin-top: 10px;
+      display: none;
     }
   </style>
 </head>
 <body>
 
-<div class="centered" id="loginSection">
-  <div class="login-container">
-    <h2>Login Administrativo</h2>
-    <input type="text" id="usuario" placeholder="Usuário" />
-    <input type="password" id="senha" placeholder="Senha" />
-    <button onclick="verificarLogin()">Entrar</button>
-    <p class="error" id="erroLogin">Usuário ou senha incorretos!</p>
-  </div>
+<div id="loginSection">
+  <h2>Login ADM</h2>
+  <input type="text" id="usuario" placeholder="Usuário">
+  <input type="password" id="senha" placeholder="Senha">
+  <button class="success" onclick="verificarLogin()">Entrar</button>
+  <p id="erroLogin">Usuário ou senha inválidos!</p>
 </div>
 
 <div id="painel">
   <h2>Painel Administrativo</h2>
 
-  <h3>Usuários</h3>
-  <div id="usuariosContainer"></div>
+  <div class="section">
+    <h3>Usuários Cadastrados</h3>
+    <div id="usuariosContainer"></div>
+  </div>
 
-  <h3>Investimentos Realizados</h3>
-  <div id="investimentosContainer"></div>
+  <div class="section">
+    <h3>Extrato de Retiradas</h3>
+    <div id="extratoContainer"></div>
+  </div>
 
-  <h3>Extrato de Retiradas</h3>
-  <div id="extratoContainer"></div>
-
-  <h3>Extrato de Depósitos</h3>
-  <div id="depositosContainer"></div>
-
-  <h3>Extrato Completo (Depósitos + Retiradas)</h3>
-  <div id="extratoCompletoContainer"></div>
+  <div class="section">
+    <h3>Extrato de Depósitos</h3>
+    <div id="depositosContainer"></div>
+  </div>
 </div>
 
 <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyCKSKnVC8dNWmiMrNr1j4rMLfQTlOrqzVM",
+    authDomain: "hinvest-f4354.firebaseapp.com",
+    databaseURL: "https://hinvest-f4354-default-rtdb.firebaseio.com",
+    projectId: "hinvest-f4354",
+    storageBucket: "hinvest-f4354.appspot.com",
+    messagingSenderId: "646397677016",
+    appId: "1:646397677016:web:f05ca27a38439568bff6ad"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
   function verificarLogin() {
     const usuario = document.getElementById('usuario').value.trim();
     const senha = document.getElementById('senha').value.trim();
-    const erro = document.getElementById('erroLogin');
-
     if (usuario === "admir" && senha === "LUIS00") {
       document.getElementById('loginSection').style.display = "none";
-      document.getElementById('painel').style.display = "block";
+      document.getElementById('painel').style.display = "flex";
       iniciarPainel();
     } else {
-      erro.style.display = "block";
+      document.getElementById('erroLogin').style.display = "block";
     }
   }
 
   function iniciarPainel() {
-    const firebaseConfig = {
-      apiKey: "AIzaSyCKSKnVC8dNWmiMrNr1j4rMLfQTlOrqzVM",
-      authDomain: "hinvest-f4354.firebaseapp.com",
-      databaseURL: "https://hinvest-f4354-default-rtdb.firebaseio.com",
-      projectId: "hinvest-f4354",
-      storageBucket: "hinvest-f4354.appspot.com",
-      messagingSenderId: "646397677016",
-      appId: "1:646397677016:web:f05ca27a38439568bff6ad"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // Exibição de Usuários
     db.ref("usuarios").on("value", snapshot => {
       const container = document.getElementById("usuariosContainer");
       container.innerHTML = "";
@@ -213,124 +150,110 @@
         const saldo = user.saldoCarteira || 0;
         const bloqueado = user.bloqueado ? "SIM" : "NÃO";
         const conta = user.contaBancaria;
-        const email = user.email || "E-mail não cadastrado";
         const dadosPix = conta ? `
-          <b>Banco:</b><br>
-          Titular: ${conta.nomeTitular}<br>
-          Tipo: ${conta.tipoChave}<br>
-          Chave PIX: ${conta.chavePix}<br>` : "Sem dados bancários.";
+          <b>Titular:</b> ${conta.nomeTitular}<br>
+          <b>Tipo:</b> ${conta.tipoChave}<br>
+          <b>Chave PIX:</b> ${conta.chavePix}<br>` : "Sem dados bancários.";
+
         container.innerHTML += `
-          <div class="card" id="user-${telefone}">
-            <b>Telefone:</b> ${telefone}<br>
+          <div class="card">
+            <div class="card-title">Usuário: ${telefone}</div>
             <b>Nome:</b> ${nome}<br>
-            <b>E-mail:</b> ${email}<br>
-            <b>Saldo na Carteira:</b> R$${saldo.toFixed(2)}<br>
+            <b>Saldo:</b> R$${saldo.toFixed(2)}<br>
             <b>Bloqueado:</b> ${bloqueado}<br><br>
             ${dadosPix}<br>
             <button class="success" onclick="adicionarSaldo('${telefone}')">Adicionar Saldo</button>
-            <div class="input-saldo" id="input-saldo-${telefone}">
-              <input type="number" id="valor-saldo-${telefone}" placeholder="Valor a adicionar" />
-              <button class="success" onclick="confirmarAdicionarSaldo('${telefone}')">Confirmar</button>
+            <div class="input-saldo" id="input-saldo-${telefone}" style="display:none;">
+              <input type="number" id="valor-saldo-${telefone}" placeholder="Valor">
+              <button class="success" onclick="confirmarAdicionarSaldo('${telefone}')">OK</button>
             </div>
-            <button class="danger" onclick="excluirUsuario('${telefone}')">Excluir Usuário</button>
-            <button class="gray" onclick="bloquearUsuario('${telefone}')">Bloquear Usuário</button>
+            <button class="danger" onclick="excluirUsuario('${telefone}')">Excluir</button>
+            <button class="gray" onclick="bloquearUsuario('${telefone}')">Bloquear</button>
           </div>`;
       });
     });
 
-    // Exibição de Extrato de Retiradas (Saque)
     db.ref("usuarios").on("value", snapshot => {
       const container = document.getElementById("extratoContainer");
       container.innerHTML = "";
       snapshot.forEach(child => {
-        const user = child.val();
         const telefone = child.key;
-        const extrato = user.extrato || [];
+        const extrato = child.val().extrato || [];
         extrato.forEach(saque => {
-          const valor = saque.valor || 0;
-          const status = saque.status || "Aguardando";
-          const dataSaque = saque.data ? new Date(saque.data).toLocaleDateString() : "";
-          const statusClass = status.toLowerCase() === "aprovado" ? "aprovado" : "aguardando";
+          const statusClass = saque.status === "Aprovado" ? "aprovado" : "aguardando";
           container.innerHTML += `
             <div class="extrato-card">
-              <p><b>Usuário:</b> ${telefone}</p>
-              <p><b>Valor do Saque:</b> R$${valor.toFixed(2)}</p>
-              <p><b>Data:</b> ${dataSaque}</p>
-              <p>Status: <span class="${statusClass}">${status}</span></p>
-              <button class="success" onclick="aprovarSaque('${telefone}', ${valor})">Aprovar Saque</button>
+              <b>Usuário:</b> ${telefone}<br>
+              <b>Valor:</b> R$${saque.valor.toFixed(2)}<br>
+              <b>Data:</b> ${new Date(saque.data).toLocaleString()}<br>
+              <span class="status ${statusClass}">${saque.status}</span><br>
+              ${saque.status !== "Aprovado" ? `<button class="success" onclick="aprovarSaque('${telefone}', ${saque.valor})">Aprovar</button>` : ""}
             </div>`;
         });
       });
     });
 
-    // Aprovar Saque
-    window.aprovarSaque = function(telefone, valor) {
-      const userRef = firebase.database().ref(`usuarios/${telefone}/extrato`);
-      userRef.once("value").then(snapshot => {
-        const extrato = snapshot.val() || [];
-        const saqueIndex = extrato.findIndex(s => s.valor === valor);
-        if (saqueIndex > -1) {
-          extrato[saqueIndex].status = "Aprovado";
-          return userRef.set(extrato);
-        } else {
-          alert("Saque não encontrado.");
-        }
-      }).then(() => {
-        alert(`Saque de R$${valor.toFixed(2)} aprovado!`);
-      }).catch(err => {
-        alert("Erro ao aprovar saque: " + err);
+    db.ref("depositos").on("value", snapshot => {
+      const container = document.getElementById("depositosContainer");
+      container.innerHTML = "";
+      snapshot.forEach(child => {
+        const dep = child.val();
+        const statusClass = dep.status === "Aprovado" ? "aprovado" : "aguardando";
+        container.innerHTML += `
+          <div class="extrato-card">
+            <b>ID:</b> ${child.key}<br>
+            <b>Valor:</b> R$${dep.valor}<br>
+            <b>Método:</b> ${dep.metodo}<br>
+            <b>Chave Pix:</b> ${dep.chavePix}<br>
+            <b>Data:</b> ${dep.dataHora}<br>
+            <span class="status ${statusClass}">${dep.status}</span><br>
+            ${dep.status !== "Aprovado" ? `<button class="success" onclick="aprovarDeposito('${child.key}')">Aprovar</button>` : ""}
+          </div>`;
       });
-    };
+    });
+  }
 
-    // Função para mostrar input para adicionar saldo
-    function adicionarSaldo(telefone) {
-      const inputDiv = document.getElementById(`input-saldo-${telefone}`);
-      inputDiv.style.display = inputDiv.style.display === "block" ? "none" : "block";
-    }
+  function adicionarSaldo(telefone) {
+    const div = document.getElementById(`input-saldo-${telefone}`);
+    div.style.display = div.style.display === "block" ? "none" : "block";
+  }
 
-    // Confirmar adicionar saldo
-    function confirmarAdicionarSaldo(telefone) {
-      const valorInput = document.getElementById(`valor-saldo-${telefone}`);
-      const valor = parseFloat(valorInput.value);
-      if (isNaN(valor) || valor <= 0) {
-        alert("Insira um valor válido para adicionar saldo.");
-        return;
+  function confirmarAdicionarSaldo(telefone) {
+    const valor = parseFloat(document.getElementById(`valor-saldo-${telefone}`).value);
+    if (isNaN(valor) || valor <= 0) return alert("Valor inválido");
+    const ref = db.ref(`usuarios/${telefone}`);
+    ref.once("value").then(snap => {
+      const atual = snap.val().saldoCarteira || 0;
+      return ref.update({ saldoCarteira: atual + valor });
+    }).then(() => alert("Saldo adicionado!"));
+  }
+
+  function excluirUsuario(telefone) {
+    if (confirm("Confirma excluir?")) db.ref(`usuarios/${telefone}`).remove();
+  }
+
+  function bloquearUsuario(telefone) {
+    const ref = db.ref(`usuarios/${telefone}`);
+    ref.once("value").then(snap => {
+      const atual = snap.val().bloqueado || false;
+      return ref.update({ bloqueado: !atual });
+    });
+  }
+
+  function aprovarSaque(telefone, valor) {
+    const ref = db.ref(`usuarios/${telefone}/extrato`);
+    ref.once("value").then(snap => {
+      const extrato = snap.val() || [];
+      const i = extrato.findIndex(e => e.valor === valor);
+      if (i >= 0) {
+        extrato[i].status = "Aprovado";
+        return ref.set(extrato);
       }
-      const userRef = firebase.database().ref(`usuarios/${telefone}`);
+    }).then(() => alert("Saque aprovado!"));
+  }
 
-      userRef.once("value").then(snapshot => {
-        let saldoAtual = snapshot.val().saldoCarteira || 0;
-        saldoAtual += valor;
-        return userRef.update({ saldoCarteira: saldoAtual });
-      }).then(() => {
-        alert(`Saldo de R$${valor.toFixed(2)} adicionado ao usuário ${telefone}.`);
-        document.getElementById(`input-saldo-${telefone}`).style.display = "none";
-        document.getElementById(`valor-saldo-${telefone}`).value = "";
-      }).catch(err => {
-        alert("Erro ao adicionar saldo: " + err);
-      });
-    }
-
-    // Excluir usuário
-    function excluirUsuario(telefone) {
-      if (confirm(`Deseja realmente excluir o usuário ${telefone}? Essa ação é irreversível.`)) {
-        firebase.database().ref(`usuarios/${telefone}`).remove()
-          .then(() => alert("Usuário excluído com sucesso."))
-          .catch(err => alert("Erro ao excluir usuário: " + err));
-      }
-    }
-
-    // Bloquear usuário
-    function bloquearUsuario(telefone) {
-      if (confirm(`Deseja bloquear/desbloquear o usuário ${telefone}?`)) {
-        const userRef = firebase.database().ref(`usuarios/${telefone}`);
-        userRef.once("value").then(snapshot => {
-          const atual = snapshot.val().bloqueado || false;
-          return userRef.update({ bloqueado: !atual });
-        }).then(() => alert("Status de bloqueio alterado com sucesso."))
-          .catch(err => alert("Erro ao alterar status de bloqueio: " + err));
-      }
-    }
+  function aprovarDeposito(id) {
+    db.ref(`depositos/${id}`).update({ status: "Aprovado" }).then(() => alert("Depósito aprovado!"));
   }
 </script>
 
