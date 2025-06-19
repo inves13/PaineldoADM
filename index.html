@@ -3,14 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>Painel Administrativo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
     body {
       background: #111;
       color: #eee;
       font-family: Arial, sans-serif;
+      overflow-y: auto;
     }
     h2, h3 {
       color: #0f0;
@@ -21,6 +27,7 @@
       flex-direction: column;
       align-items: center;
       padding: 20px;
+      width: 100%;
       min-height: 100vh;
     }
     input, button {
@@ -37,7 +44,7 @@
     .success { background: #2ecc71; color: #fff; }
     .danger { background: #e74c3c; color: #fff; }
     .gray { background: #7f8c8d; color: #fff; }
-    #painel { display: none; align-items: flex-start; overflow-y: auto; }
+    #painel { display: none; align-items: flex-start; }
     .section {
       width: 100%;
       max-width: 900px;
@@ -140,6 +147,7 @@
   }
 
   function iniciarPainel() {
+    // Usuários
     db.ref("usuarios").on("value", snapshot => {
       const container = document.getElementById("usuariosContainer");
       container.innerHTML = "";
@@ -173,6 +181,7 @@
       });
     });
 
+    // Retiradas
     db.ref("usuarios").on("value", snapshot => {
       const container = document.getElementById("extratoContainer");
       container.innerHTML = "";
@@ -185,7 +194,7 @@
             <div class="extrato-card">
               <b>Usuário:</b> ${telefone}<br>
               <b>Valor:</b> R$${saque.valor.toFixed(2)}<br>
-              <b>Data:</b> ${new Date(saque.data).toLocaleString()}<br>
+              <b>Data:</b> ${saque.dataSolicitacao || "Sem data"}<br>
               <span class="status ${statusClass}">${saque.status}</span><br>
               ${saque.status !== "Aprovado" ? `<button class="success" onclick="aprovarSaque('${telefone}', ${saque.valor})">Aprovar</button>` : ""}
             </div>`;
@@ -193,6 +202,7 @@
       });
     });
 
+    // Depósitos
     db.ref("depositos").on("value", snapshot => {
       const container = document.getElementById("depositosContainer");
       container.innerHTML = "";
@@ -202,11 +212,13 @@
         container.innerHTML += `
           <div class="extrato-card">
             <b>ID:</b> ${child.key}<br>
+            <b>Nome:</b> ${dep.nome}<br>
+            <b>Telefone:</b> ${dep.telefone}<br>
+            <b>CPF:</b> ${dep.cpf}<br>
             <b>Valor:</b> R$${dep.valor}<br>
             <b>Método:</b> ${dep.metodo}<br>
-            <b>Chave Pix:</b> ${dep.chavePix}<br>
-            <b>Data:</b> ${dep.dataHora}<br>
-            <span class="status ${statusClass}">${dep.status}</span><br>
+            <b>Data:</b> ${new Date(dep.data).toLocaleString()}<br>
+            <span class="status ${statusClass}">${dep.status || "Aguardando"}</span><br>
             ${dep.status !== "Aprovado" ? `<button class="success" onclick="aprovarDeposito('${child.key}')">Aprovar</button>` : ""}
           </div>`;
       });
