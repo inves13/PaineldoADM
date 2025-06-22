@@ -1,27 +1,21 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Painel Administrativo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      height: 100%;
-      width: 100%;
-    }
+    html, body { height: 100%; width: 100%; }
     body {
       background: #111;
       color: #eee;
       font-family: Arial, sans-serif;
       overflow-y: auto;
     }
-    h2, h3 {
-      color: #0f0;
-      margin-bottom: 10px;
-    }
+    h2, h3 { color: #0f0; margin-bottom: 10px; }
     #loginSection, #painel {
       display: flex;
       flex-direction: column;
@@ -38,10 +32,8 @@
       width: 100%;
       max-width: 300px;
     }
-    button {
-      cursor: pointer;
-    }
-    .success { background: #2ecc71; color: #fff; }
+    button { cursor: pointer; }
+    .success { background: #2ecc71; color: #000; }
     .danger { background: #e74c3c; color: #fff; }
     .gray { background: #7f8c8d; color: #fff; }
     #painel { display: none; align-items: flex-start; }
@@ -72,9 +64,12 @@
     }
     .status {
       font-weight: bold;
+      padding: 3px 7px;
+      border-radius: 5px;
+      display: inline-block;
     }
-    .aprovado { color: #2ecc71; }
-    .aguardando { color: #f1c40f; }
+    .aprovado { background: #2ecc71; color: #000; }
+    .aguardando { background: #f1c40f; color: #000; }
     .input-saldo {
       display: flex;
       gap: 5px;
@@ -95,8 +90,8 @@
 
 <div id="loginSection">
   <h2>Login ADM</h2>
-  <input type="text" id="usuario" placeholder="Usuário">
-  <input type="password" id="senha" placeholder="Senha">
+  <input type="text" id="usuario" placeholder="Usuário" />
+  <input type="password" id="senha" placeholder="Senha" />
   <button class="success" onclick="verificarLogin()">Entrar</button>
   <p id="erroLogin">Usuário ou senha inválidos!</p>
 </div>
@@ -147,14 +142,20 @@
   }
 
   function iniciarPainel() {
-    // Usuários
+    carregarUsuarios();
+    carregarRetiradas();
+    carregarDepositos();
+  }
+
+  function carregarUsuarios() {
+    const container = document.getElementById("usuariosContainer");
+    container.innerHTML = "";
     db.ref("usuarios").on("value", snapshot => {
-      const container = document.getElementById("usuariosContainer");
       container.innerHTML = "";
       snapshot.forEach(child => {
         const user = child.val();
         const telefone = child.key;
-        const nome = user.nome || "(Sem nome)";
+        const nome = user.nome || user.nomeCompleto || "(Sem nome)";
         const saldo = user.saldoCarteira || 0;
         const bloqueado = user.bloqueado ? "SIM" : "NÃO";
         const conta = user.contaBancaria;
@@ -172,55 +173,67 @@
             ${dadosPix}<br>
             <button class="success" onclick="adicionarSaldo('${telefone}')">Adicionar Saldo</button>
             <div class="input-saldo" id="input-saldo-${telefone}" style="display:none;">
-              <input type="number" id="valor-saldo-${telefone}" placeholder="Valor">
+              <input type="number" id="valor-saldo-${telefone}" placeholder="Valor" />
               <button class="success" onclick="confirmarAdicionarSaldo('${telefone}')">OK</button>
             </div>
             <button class="danger" onclick="excluirUsuario('${telefone}')">Excluir</button>
             <button class="gray" onclick="bloquearUsuario('${telefone}')">Bloquear</button>
-          </div>`;
+          </div>
+        `;
       });
     });
+  }
 
-    // Retiradas
+  function carregarRetiradas() {
+    const container = document.getElementById("extratoContainer");
+    container.innerHTML = "";
     db.ref("usuarios").on("value", snapshot => {
-      const container = document.getElementById("extratoContainer");
       container.innerHTML = "";
       snapshot.forEach(child => {
         const telefone = child.key;
         const extrato = child.val().extrato || [];
-        extrato.forEach(saque => {
+        extrato.forEach((saque, index) => {
           const statusClass = saque.status === "Aprovado" ? "aprovado" : "aguardando";
           container.innerHTML += `
             <div class="extrato-card">
               <b>Usuário:</b> ${telefone}<br>
-              <b>Valor:</b> R$${saque.valor.toFixed(2)}<br>
+              <b>Valor:</b> R$${parseFloat(saque.valor).toFixed(2)}<br>
               <b>Data:</b> ${saque.dataSolicitacao || "Sem data"}<br>
               <span class="status ${statusClass}">${saque.status}</span><br>
-              ${saque.status !== "Aprovado" ? `<button class="success" onclick="aprovarSaque('${telefone}', ${saque.valor})">Aprovar</button>` : ""}
-            </div>`;
+              ${saque.status !== "Aprovado" ? `<button class="success" onclick="aprovarSaque('${telefone}', ${index})">Aprovar</button>` : ""}
+            </div>
+          `;
         });
       });
     });
+  }
 
-    // Depósitos
-    db.ref("depositos").on("value", snapshot => {
-      const container = document.getElementById("depositosContainer");
-      container.innerHTML = "";
-      snapshot.forEach(child => {
-        const dep = child.val();
-        const statusClass = dep.status === "Aprovado" ? "aprovado" : "aguardando";
-        container.innerHTML += `
-          <div class="extrato-card">
-            <b>ID:</b> ${child.key}<br>
-            <b>Nome:</b> ${dep.nome}<br>
-            <b>Telefone:</b> ${dep.telefone}<br>
-            <b>CPF:</b> ${dep.cpf}<br>
-            <b>Valor:</b> R$${dep.valor}<br>
-            <b>Método:</b> ${dep.metodo}<br>
-            <b>Data:</b> ${new Date(dep.data).toLocaleString()}<br>
-            <span class="status ${statusClass}">${dep.status || "Aguardando"}</span><br>
-            ${dep.status !== "Aprovado" ? `<button class="success" onclick="aprovarDeposito('${child.key}')">Aprovar</button>` : ""}
-          </div>`;
+  function carregarDepositos() {
+    const container = document.getElementById("depositosContainer");
+    container.innerHTML = "";
+    db.ref("usuarios").once("value").then(snapshot => {
+      snapshot.forEach(userSnap => {
+        const telefone = userSnap.key;
+        const userData = userSnap.val();
+        const nome = userData.nome || userData.nomeCompleto || "(Sem nome)";
+        const extratosDepositos = userData.extratosDepositos || {};
+
+        Object.entries(extratosDepositos).forEach(([depId, dep]) => {
+          const statusClass = dep.status === "Aprovado" ? "aprovado" : "aguardando";
+          container.innerHTML += `
+            <div class="extrato-card">
+              <b>ID Depósito:</b> ${depId}<br>
+              <b>Usuário:</b> ${nome}<br>
+              <b>Telefone:</b> ${telefone}<br>
+              <b>Valor:</b> R$${parseFloat(dep.valor).toFixed(2)}<br>
+              <b>Método:</b> ${dep.metodoPagamento || dep.metodo || "N/A"}<br>
+              <b>Chave Pix:</b> ${dep.chavePix || "N/A"}<br>
+              <b>Data:</b> ${new Date(dep.data).toLocaleString()}<br>
+              <span class="status ${statusClass}">${dep.status || "Aguardando"}</span><br>
+              ${dep.status !== "Aprovado" ? `<button class="success" onclick="aprovarDeposito('${telefone}', '${depId}')">Aprovar</button>` : ""}
+            </div>
+          `;
+        });
       });
     });
   }
@@ -241,7 +254,11 @@
   }
 
   function excluirUsuario(telefone) {
-    if (confirm("Confirma excluir?")) db.ref(`usuarios/${telefone}`).remove();
+    if (confirm("Confirma excluir?")) {
+      db.ref(`usuarios/${telefone}`).remove()
+        .then(() => alert("Usuário excluído!"))
+        .catch(e => alert("Erro ao excluir: " + e.message));
+    }
   }
 
   function bloquearUsuario(telefone) {
@@ -249,23 +266,32 @@
     ref.once("value").then(snap => {
       const atual = snap.val().bloqueado || false;
       return ref.update({ bloqueado: !atual });
-    });
+    }).then(() => alert("Status alterado!"));
   }
 
-  function aprovarSaque(telefone, valor) {
+  function aprovarSaque(telefone, index) {
     const ref = db.ref(`usuarios/${telefone}/extrato`);
     ref.once("value").then(snap => {
       const extrato = snap.val() || [];
-      const i = extrato.findIndex(e => e.valor === valor);
-      if (i >= 0) {
-        extrato[i].status = "Aprovado";
+      if (extrato[index]) {
+        extrato[index].status = "Aprovado";
         return ref.set(extrato);
+      } else {
+        alert("Saque não encontrado.");
       }
-    }).then(() => alert("Saque aprovado!"));
+    }).then(() => {
+      alert("Saque aprovado!");
+      carregarRetiradas();
+    });
   }
 
-  function aprovarDeposito(id) {
-    db.ref(`depositos/${id}`).update({ status: "Aprovado" }).then(() => alert("Depósito aprovado!"));
+  function aprovarDeposito(telefone, depId) {
+    db.ref(`usuarios/${telefone}/extratosDepositos/${depId}`).update({ status: "Aprovado" })
+      .then(() => {
+        alert("Depósito aprovado!");
+        carregarDepositos();
+      })
+      .catch(err => alert("Erro ao aprovar: " + err.message));
   }
 </script>
 
